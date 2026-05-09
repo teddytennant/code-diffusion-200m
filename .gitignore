@@ -2,10 +2,10 @@
 __pycache__/
 *.pyc
 .pytest_cache/
-data/
-checkpoints/
-results/
-logs/
-wandb/
+/data/
+/checkpoints/
+/results/
+/logs/
+/wandb/
 *.log
 .DS_Store
