@@ -1,0 +1,71 @@
+# Main training config for Code-Diffusion-200M
+# This is a SKELETON — the train loop is built on the cluster and consumes this.
+# Field names are suggestions; rename to match your loop.
+
+run:
+  name: cd200m-main
+  seed: 42
+  output_dir: checkpoints/main
+  log_every: 50
+  ckpt_every: 1000
+  wandb_project: code-diffusion-200m
+
+model:
+  vocab_size: 49154
+  hidden_dim: 1024
+  num_layers: 12
+  num_heads: 16
+  head_dim: 64
+  mlp_hidden: 2730
+  max_seq_len: 4096
+  rope_base: 10000.0
+  norm_eps: 1.0e-5
+  tie_embeddings: true
+  use_grad_checkpoint: true
+  dropout: 0.0
+
+data:
+  sources:
+    - {path: data/starcoder2, kind: starcoder, weight: 0.60}
+    - {path: data/synthetic.jsonl, kind: synthetic, weight: 0.30}
+    - {path: data/synthetic.jsonl, kind: fim, weight: 0.10}
+  seq_len: 4096
+  ast_mask_prob: 0.7
+  fim_prob: 0.10
+  mask_ratio_min: 0.05
+  mask_ratio_max: 0.50  # raised to 1.0 after warmup phase (curriculum)
+
+train:
+  total_tokens: 8_000_000_000
+  per_device_batch: 6
+  grad_accum_steps: 22  # ~512K-token effective batch at seq_len 4k
+  precision: bf16
+  optimizer:
+    name: adamw_8bit
+    lr: 3.0e-4
+    betas: [0.9, 0.95]
+    weight_decay: 0.1
+    eps: 1.0e-8
+  schedule:
+    name: wsd  # warmup-stable-decay
+    warmup_pct: 0.05
+    stable_pct: 0.85
+    decay_pct: 0.10
+    decay_shape: quadratic
+  curriculum:
+    mask_ratio_phase_pct: 0.30  # first 30% uses [0.05, 0.50]; then [0.05, 1.0]
+  flash_attention: true
+  z_loss_weight: 1.0e-4
+
+sampler:
+  diffusion_steps: 16
+  confidence_remask: true
+  ar_refine: true
+  ar_refine_threshold: 0.7
+  temperature: 0.2
+
+eval:
+  during_training: true
+  every_steps: 5000
+  tasks: [humaneval_fim_single_line, throughput]
+  final_tasks: [humaneval, mbpp, humaneval_fim, throughput]

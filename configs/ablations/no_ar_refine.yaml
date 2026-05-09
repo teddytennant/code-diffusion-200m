@@ -1,0 +1,7 @@
+# Ablation: AR refinement pass disabled. Same checkpoint as main; only inference changes.
+extends: ../main.yaml
+run:
+  name: cd200m-no-ar-refine
+  output_dir: results/no_ar_refine
+sampler:
+  ar_refine: false

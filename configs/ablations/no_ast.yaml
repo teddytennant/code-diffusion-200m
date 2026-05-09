@@ -1,0 +1,7 @@
+# Ablation: AST masking disabled (100% random masking). Trains a fresh model.
+extends: ../main.yaml
+run:
+  name: cd200m-no-ast
+  output_dir: checkpoints/no_ast
+data:
+  ast_mask_prob: 0.0

@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+data/
+checkpoints/
+results/
+logs/
+wandb/
+*.log
+.DS_Store

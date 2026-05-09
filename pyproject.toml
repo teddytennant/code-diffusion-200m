@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "code-diffusion-200m"
+version = "0.1.0"
+description = "200M masked diffusion LM for Python code with AST-structured masking, confidence-guided remasking, and AR refinement"
+requires-python = ">=3.10"
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q -ra"
+markers = [
+    "network: tests that require network access (skipped by default)",
+]
