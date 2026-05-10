@@ -48,6 +48,18 @@ pytest tests/                       # 54 passed, 2 skipped
 - Added `configs/smoke_cpu.yaml` (tiny model, 128-tok ctx, JSONL-only dataset) for the boot smoke. Note: the loop auto-uses CUDA when available, so this config also doubles as a quick GPU smoke when an A100 is attached. `data/smoke/tiny.jsonl` is gitignored (`/data/`).
 - Smoke results: 3-step run, loss 10.81 → 10.72, mask_ratio_max bumped from 0.50 → 1.0 at the curriculum boundary, all W&B fields present in stdout fallback.
 
+## 2026-05-10 — Data + GPU smoke
+
+- StarCoder2 (`bigcode/starcoderdata`) is gated; no HF_TOKEN in env. Switched to `codeparrot/codeparrot-clean` (open, deduped Python from GitHub). Added `scripts/download_corpus.py` to stream + filter (200-50000 char range) into JSONL. Configured `kind: synthetic` to consume it (same on-the-fly tokenization path).
+- Downloaded 500K rows = 3.83GB = ~0.96B tokens of unique text in 188s.
+- 5-step GPU smoke at full model size (201M params, 4096 ctx, batch 6 × accum 22):
+  - Loss: 10.98 → 8.93 (rapid initial drop, expected for masked diffusion).
+  - Throughput: ~29K tokens/sec (SDPA fallback, no flash-attn).
+  - GPU memory: ~25 GB peak (target was 50-60 GB; we're well under).
+  - Curriculum bumped at expected step.
+  - 8-bit AdamW via bitsandbytes works; flash-attn build still running, SDPA fallback used.
+- `configs/main_no_synthetic.yaml`: drops the synthetic source (no ANTHROPIC_API_KEY in env), retunes total_tokens to 1.5B for an overnight A100 budget. Once a key + synthetic data are available, switch back to `configs/main.yaml`.
+
 ## 2026-05-10 — Repo hygiene
 
 - The original `.gitignore` had an unanchored `data/` pattern that silently blocked `src/data/` from the initial push. Fixed to `/data/` (anchored). The `src/data/` package was force-pushed in a follow-up commit.

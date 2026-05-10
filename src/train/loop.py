@@ -241,12 +241,11 @@ class _Logger:
     def log(self, metrics: Dict[str, Any], step: int) -> None:
         if self.wandb is not None:
             self.wandb.log(metrics, step=step)
-        else:
-            kv = " ".join(
-                f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
-                for k, v in metrics.items()
-            )
-            print(f"[step {step}] {kv}")
+        kv = " ".join(
+            f"{k}={v:.4g}" if isinstance(v, float) else f"{k}={v}"
+            for k, v in metrics.items()
+        )
+        print(f"[step {step}] {kv}", flush=True)
 
     def finish(self) -> None:
         if self.wandb is not None:
