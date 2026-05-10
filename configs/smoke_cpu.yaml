@@ -1,0 +1,53 @@
+# CPU-only smoke config — verifies the loop boots end-to-end without GPU.
+run:
+  name: smoke-cpu
+  seed: 42
+  output_dir: checkpoints/smoke_cpu
+  log_every: 1
+  ckpt_every: 100
+  dataloader_workers: 0
+
+model:
+  vocab_size: 49154
+  hidden_dim: 64
+  num_layers: 2
+  num_heads: 4
+  head_dim: 16
+  mlp_hidden: 128
+  max_seq_len: 128
+  rope_base: 10000.0
+  norm_eps: 1.0e-5
+  tie_embeddings: true
+  use_grad_checkpoint: false
+  dropout: 0.0
+
+data:
+  sources:
+    - {path: data/smoke/tiny.jsonl, kind: synthetic, weight: 1.0}
+  seq_len: 128
+  ast_mask_prob: 0.0   # MockTokenizer-friendly path; AST disabled for speed.
+  fim_prob: 0.0
+  mask_ratio_min: 0.10
+  mask_ratio_max: 0.50
+
+train:
+  total_tokens: 100_000
+  per_device_batch: 2
+  grad_accum_steps: 1
+  precision: bf16
+  optimizer:
+    name: adamw
+    lr: 3.0e-4
+    betas: [0.9, 0.95]
+    weight_decay: 0.1
+    eps: 1.0e-8
+  schedule:
+    name: wsd
+    warmup_pct: 0.05
+    stable_pct: 0.85
+    decay_pct: 0.10
+    decay_shape: quadratic
+  curriculum:
+    mask_ratio_phase_pct: 0.30
+  flash_attention: false
+  z_loss_weight: 1.0e-4
