@@ -112,11 +112,8 @@ def _import_check_correctness():
     """
     try:
         from human_eval.execution import check_correctness  # type: ignore
-    except ImportError as exc:  # pragma: no cover - exercised in error path
-        raise ImportError(
-            "human_eval is required for HumanEval evaluation but is not "
-            f"installed. {_HUMAN_EVAL_INSTALL_HINT}"
-        ) from exc
+    except ImportError:
+        from src.eval._humaneval_vendor import check_correctness
     return check_correctness
 
 
