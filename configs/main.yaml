@@ -1,6 +1,4 @@
 # Main training config for Code-Diffusion-200M
-# This is a SKELETON — the train loop is built on the cluster and consumes this.
-# Field names are suggestions; rename to match your loop.
 
 run:
   name: cd200m-main
@@ -63,9 +61,3 @@ sampler:
   ar_refine: true
   ar_refine_threshold: 0.7
   temperature: 0.2
-
-eval:
-  during_training: true
-  every_steps: 5000
-  tasks: [humaneval_fim_single_line, throughput]
-  final_tasks: [humaneval, mbpp, humaneval_fim, throughput]

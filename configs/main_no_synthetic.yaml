@@ -67,9 +67,3 @@ sampler:
   ar_refine: true
   ar_refine_threshold: 0.7
   temperature: 0.2
-
-eval:
-  during_training: true
-  every_steps: 5000
-  tasks: [humaneval_fim_single_line, throughput]
-  final_tasks: [humaneval, mbpp, humaneval_fim, throughput]

@@ -1,17 +1,15 @@
-# Ablation: same-size AR transformer trained on same data with same compute.
-# Direct AR baseline for the diffusion approach.
+# Ablation: same-size causal LM (AR) baseline trained on same data.
 extends: ../main.yaml
 run:
   name: cd200m-ar-only
   output_dir: checkpoints/ar_only
 model:
-  # Same architecture; train objective is causal LM not diffusion.
   use_grad_checkpoint: true
 data:
   ast_mask_prob: 0.0
   fim_prob: 0.0
 train:
-  objective: causal_lm  # train loop reads this and switches loss
+  objective: causal_lm
 sampler:
   diffusion_steps: 1
   confidence_remask: false
