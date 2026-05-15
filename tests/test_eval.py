@@ -519,6 +519,5 @@ def test_imports_are_cheap() -> None:
         "src.eval.humaneval_fim",
         "src.eval.mbpp",
         "src.eval.throughput",
-        "src.eval.runner",
     ):
         importlib.import_module(mod)

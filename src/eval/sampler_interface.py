@@ -1,9 +1,6 @@
-"""Sampler protocol.
+"""Sampler protocol (implemented by DiffusionSampler).
 
-This is the only contract between the evaluation harness and the model.
-The actual diffusion sampler is implemented in src.sample (built later on
-the cluster); evaluation code never imports it directly. Tests use a mock
-that satisfies this protocol.
+Evaluation code talks only to this; never imports the concrete sampler directly.
 """
 
 from __future__ import annotations
@@ -42,12 +39,10 @@ class Sampler(Protocol):
         ...
 
 
-# StarCoder2 FIM sentinels. Centralised so the eval harness, the future
-# tokenizer setup, and the sampler all agree on the wire format.
+# StarCoder2 FIM sentinels. Shared by eval, tokenizer, and sampler.
 FIM_PREFIX = "<fim_prefix>"
 FIM_SUFFIX = "<fim_suffix>"
 FIM_MIDDLE = "<fim_middle>"
-FIM_PAD = "<fim_pad>"
 
 
 def build_fim_prompt(prefix: str, suffix: str) -> str:

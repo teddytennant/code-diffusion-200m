@@ -47,12 +47,6 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     return p.parse_args(argv)
 
 
-def _wrap_with_step_default(sampler, default_steps: int):
-    """Apply --diffusion-steps as the default for sample() calls that don't override."""
-    sampler.default_diffusion_steps = default_steps
-    return sampler
-
-
 def _run(task: str, sampler, args, output_dir: Path) -> dict:
     output_dir.mkdir(parents=True, exist_ok=True)
 
