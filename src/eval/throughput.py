@@ -1,9 +1,7 @@
 """Throughput vs quality benchmarking.
 
-Sweeps the diffusion-step count and reports tokens/sec against a quick
-quality proxy: the fraction of generated continuations that parse as valid
-Python via ``ast.parse``. The DataFrame returned makes it trivial to plot
-the quality/latency Pareto.
+Sweeps diffusion step counts, reports tokens/sec and fraction of outputs that
+parse as valid Python (via ast.parse). Returns a DataFrame for Pareto analysis.
 """
 
 from __future__ import annotations

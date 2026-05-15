@@ -1,22 +1,9 @@
 """HumanEval-FIM: fill-in-the-middle evaluation on HumanEval.
 
-Three variants:
-
-* ``single_line`` — delete one random non-empty body line.
-* ``multi_line`` — delete a contiguous span of 2-4 body lines.
-* ``random_span`` — delete a random character span 20-80 chars long, where
-  the cut starts on a non-word boundary (so we never split a token).
-
-For each problem we feed the model the surrounding code as a StarCoder2-style
-FIM prompt (``<fim_prefix>``...``<fim_suffix>``...``<fim_middle>``), let the
-sampler infill the gap, glue the result back, and run the original HumanEval
-unit tests against the reconstructed program.
-
-Reported metrics:
-
-* ``exact_match`` — fraction of samples that exactly equal the deleted span.
-* ``pass@1``     — fraction of problems where at least one sample yields a
-  reconstructed program that passes the canonical tests.
+Three variants (single_line, multi_line, random_span). For each, a span is
+removed from the canonical solution, the model is given a FIM prompt, and we
+measure exact_match on the infill + pass@1 on the reconstructed program via
+the original unit tests.
 """
 
 from __future__ import annotations

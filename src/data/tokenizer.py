@@ -1,9 +1,8 @@
 """StarCoder2 tokenizer wrapper.
 
 Adds two special tokens (`<MASK>`, `<PAD>`) on top of the base StarCoder2 vocab
-(49152 tokens), giving a final vocab size of 49154 — matching the model
-config that another agent owns. FIM tokens (`<fim_prefix>`, `<fim_middle>`,
-`<fim_suffix>`) already exist in the base StarCoder2 vocab and are reused.
+(49152 tokens) for a final size of 49154. FIM tokens (`<fim_prefix>`,
+`<fim_middle>`, `<fim_suffix>`) are already present in the base vocab and reused.
 """
 from __future__ import annotations
 
@@ -65,7 +64,7 @@ class CodeTokenizer:
         if len(self._tok) != EXPECTED_VOCAB:
             raise RuntimeError(
                 f"Final vocab size {len(self._tok)} != expected {EXPECTED_VOCAB}. "
-                "Model agent expects 49154; check StarCoder2 base vocab."
+                "Check StarCoder2 base vocab (must be 49152 before adding MASK/PAD)."
             )
 
     # --- core API -------------------------------------------------------------

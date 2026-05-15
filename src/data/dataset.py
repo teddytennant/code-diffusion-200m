@@ -1,12 +1,8 @@
 """Streaming masked-diffusion dataset with weighted source mixing.
 
-A single dataset reads from multiple sources (HF Arrow for StarCoder2-style
-corpora, JSONL for synthetic and FIM examples), tokenises on the fly, packs
-into ``seq_len`` chunks, and yields per-sequence masks for diffusion training.
-
-The dataset is intentionally pure-Python on the hot path — the only torch
-calls are tensor construction at yield time. That lets us run the unit tests
-without a GPU and keeps DataLoader workers cheap.
+Reads from HF Arrow / JSONL sources, tokenizes on the fly, packs into seq_len
+chunks, and yields masked examples for diffusion (or FIM) training. Supports
+AST subtree masking, random masking, and FIM reordering.
 """
 from __future__ import annotations
 
@@ -229,9 +225,7 @@ class CodeDiffusionDataset(IterableDataset):
             inp = ex["input_ids"]
             tgt = ex["target_ids"]
             msk = ex["mask_positions"]
-            # Let packing split large examples into multiple chunks rather
-            # than truncating — losing the tail also drops FIM markers and
-            # AST-masked spans that fall past the cut.
+            # Packing splits large examples across chunks (no truncation of tails).
 
             if buf_input and self._sep_ids:
                 buf_input.extend(self._sep_ids)
@@ -261,7 +255,7 @@ class CodeDiffusionDataset(IterableDataset):
                     "mask_ratio": float(ratio),
                 }
 
-        # Discard the trailing partial chunk by design — the spec asks for it.
+        # Trailing partial chunk is discarded (by design).
 
     # ------------------------------------------------------------------
     # Mixing & main loop

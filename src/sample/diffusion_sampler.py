@@ -294,7 +294,6 @@ class DiffusionSampler:
         mask_id = self.tokenizer.mask_id
 
         confidences = torch.zeros((bsz, gen_len), dtype=torch.float32, device=self.device)
-        is_masked = buf[:, gen_slice] == mask_id
 
         steps = max(1, cfg.diffusion_steps)
         for s in range(steps):
@@ -354,7 +353,6 @@ class DiffusionSampler:
             confidences[cur_mask] = conf
             buf[:, gen_slice] = gen_buf
 
-        _ = is_masked
         return confidences
 
     def _ar_refine(

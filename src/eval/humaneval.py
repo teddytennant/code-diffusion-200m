@@ -1,12 +1,7 @@
 """HumanEval pass@k.
 
-Runs HumanEval against any object satisfying the Sampler protocol and
-reports pass@1 / pass@10 with the standard unbiased estimator.
-
-This module imports ``human_eval`` *lazily* inside functions so that the
-evaluation package can be imported on machines that don't have it (CI,
-unit tests). When evaluation is actually requested and the package is
-missing, a clear error message points to the install instructions.
+Runs HumanEval (lazy import of human-eval package) against a Sampler and
+reports pass@1 / pass@10 using the unbiased estimator from the paper.
 """
 
 from __future__ import annotations

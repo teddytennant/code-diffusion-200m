@@ -1,10 +1,9 @@
 """AST-aware subtree masking for Python source.
 
-The model wins more on coding tasks when masked spans align with syntactic
-boundaries (functions, blocks, statements). We parse the Python source, pick
-nodes whose char range we know, map those to token spans via the fast
-tokenizer's offset mapping, then mask whole subtrees until we hit the target
-ratio. Caller falls back to ``random_token_mask`` when this returns ``None``.
+Parses Python, selects maskable AST nodes (FunctionDef, If, For, Assign, ...),
+maps their char spans to token spans via the tokenizer's offset_mapping, and
+masks whole subtrees until the target ratio is reached. Returns None on parse
+failure (caller falls back to random masking).
 """
 from __future__ import annotations
 
@@ -95,12 +94,7 @@ def ast_subtree_mask(
     if not source:
         return [], []
 
-    # Tokenize first to determine where to truncate. We then re-tokenize the
-    # truncated prefix so the offset mapping refers to the same string we feed
-    # ast.parse. Truncation rarely lands on a syntactically valid boundary, so
-    # we walk back to the last newline (and beyond if needed) until ast.parse
-    # succeeds. If we exhaust reasonable backoffs, we give up — caller falls
-    # back to random_token_mask.
+    # Truncate and walk back to last valid newline so ast.parse succeeds.
     ids_full, offsets_full = tokenizer.encode_with_offsets(source)
     if len(ids_full) > max_seq_len:
         cut_char = offsets_full[max_seq_len - 1][1] if max_seq_len > 0 else 0

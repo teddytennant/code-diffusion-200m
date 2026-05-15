@@ -1,9 +1,8 @@
 """MBPP pass@k.
 
-Loads the MBPP dataset via HuggingFace ``datasets`` and evaluates the same
-unbiased pass@k estimator used for HumanEval. Programs are executed in a
-fresh Python subprocess with a 5-second timeout — independent from the
-``human_eval`` package because MBPP's test format is different.
+Loads MBPP via datasets and runs the unbiased pass@k estimator. Execution
+uses a fresh subprocess (5s timeout) because MBPP test format differs from
+HumanEval.
 """
 
 from __future__ import annotations

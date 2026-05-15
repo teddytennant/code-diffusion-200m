@@ -1,9 +1,7 @@
 """Fill-in-the-middle (FIM) reordering.
 
-We sample a contiguous span uniformly from the token sequence, split into
-prefix / middle / suffix, then concatenate using StarCoder2's FIM markers.
-Both PSM and SPM orderings are produced (50/50 by default), matching the
-training mix used by StarCoder/StarCoder2.
+Samples a contiguous span, splits into prefix/middle/suffix, and reorders
+using StarCoder2 FIM markers (<fim_prefix> etc). Produces PSM or SPM (50/50).
 """
 from __future__ import annotations
 
