@@ -11,7 +11,7 @@ python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 pip install flash-attn --no-build-isolation  # last, needs torch installed
-pytest tests/  # expect: 41 passed, 2 skipped
+pytest tests/  # all pass (2 network tests skipped unless RUN_NETWORK_TESTS=1)
 ```
 
 ## 1. Data prep (CPU, ~1–2 hr)
@@ -42,19 +42,14 @@ python scripts/gen_synthetic.py \
 
 **Confirm cost with user before running.**
 
-### FIM data (auto-generated from above two)
-A small script (`scripts/build_fim.py` — to be written) can take a fraction of either source and pre-format as FIM. Or just rely on the dataset's `fim_prob=0.10` to generate FIM examples on the fly.
+### FIM data
+FIM examples are generated on-the-fly via `fim_prob=0.10` in the dataset (see `src/data/fim.py` + `dataset.py`). No separate pre-format script needed.
 
-## 2. Build the missing pieces (Claude Code, ~2–4 hr)
-
-These don't exist yet — Claude Code on the cluster builds them:
-
-- `src/sample/diffusion_sampler.py` — see spec in `src/sample/README.md` (TBD)
-- `src/train/loop.py` — see spec in `src/train/README.md` (TBD)
-- `train.py`, `sample.py`, `eval.py` top-level
-- `configs/main.yaml`, `configs/ablations/{no_ast,no_conf_remask,no_ar_refine,ar_only}.yaml`
-
-Reference the master prompt the user has saved separately.
+## 2. Components (all implemented)
+- `src/sample/diffusion_sampler.py` + `load.py`
+- `src/train/loop.py` (WSD, 8-bit AdamW, curriculum, causal_lm for ar_only)
+- `train.py` / `sample.py` / `eval.py` CLIs + `scripts/build_results.py`
+- Configs with `extends:` support (train.py) and `objective: causal_lm`
 
 ## 3. Smoke training (1–2 GPU-hr)
 
@@ -101,10 +96,10 @@ If the full ablation suite is out of budget, prioritise: `no_conf_remask` and `n
 ## 7. Write up
 
 ```bash
-python scripts/build_results_table.py results/ > RESULTS.md  # to be written
+python scripts/build_results.py --results-dir results/ --output RESULTS.md
 ```
 
-The artifact is RESULTS.md plus the four ablation comparisons. The headline: HumanEval-FIM pass@1 of the full system vs each ablation.
+Produces RESULTS.md table from the per-task results.json files. Headline metric: HumanEval-FIM pass@1 (full vs ablations).
 
 ## Critical operational notes
 

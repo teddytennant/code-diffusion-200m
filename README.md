@@ -7,8 +7,8 @@ Headline target: **best-in-size on HumanEval-FIM**, with three novel mechanisms 
 ## Three novel mechanisms
 
 1. **AST-structured masking (training-time).** During training, 70% of batches mask whole Python AST subtrees (function bodies, loops, expressions) instead of random tokens. Forces the model to denoise at the syntactic level. Implemented in `src/data/ast_masking.py`.
-2. **Confidence-guided remasking (inference-time).** At each denoising step, remask the K lowest-confidence tokens by predictive entropy rather than random positions. Adaptive — easy regions resolve early, hard regions get more compute. *To be implemented in `src/sample/`.*
-3. **AR refinement pass (post-diffusion).** After diffusion converges, run the same model with `causal=True` to regenerate positions where confidence is below threshold. Same weights, different inference mode. *To be implemented in `src/sample/`.*
+2. **Confidence-guided remasking (inference-time).** At each denoising step, remask the K lowest-confidence tokens by predictive entropy rather than random positions. Adaptive — easy regions resolve early, hard regions get more compute. Implemented in `src/sample/diffusion_sampler.py`.
+3. **AR refinement pass (post-diffusion).** After diffusion converges, run the same model with `causal=True` to regenerate positions where confidence is below threshold. Same weights, different inference mode. Implemented in `src/sample/diffusion_sampler.py`.
 
 ## Architecture
 
@@ -32,29 +32,23 @@ src/
   model/      bidirectional transformer (built)
   data/       tokenizer, AST/random/FIM masking, packed streaming dataset (built)
   eval/       HumanEval, MBPP, HumanEval-FIM, throughput (built)
-  sample/     diffusion sampler + AR refinement (TO BUILD on cluster)
-  train/      training loop (TO BUILD on cluster)
+  sample/     diffusion sampler + confidence remask + AR refine
+  train/      WSD + 8-bit AdamW + BF16 + curriculum + resume
 scripts/
-  gen_synthetic.py       Anthropic API → diverse Python files (built)
-  synthetic_prompts.py   prompt templates (built)
-tests/                   CPU-only unit tests, all 41 pass
-configs/                 YAML configs (skeletons; fill in on cluster)
+  gen_synthetic*.py, download_corpus.py, build_results.py, auto_finish.sh
+tests/                   CPU-only unit tests, all pass
+configs/                 main + ablations (extends: supported)
 ```
 
-## What's done vs what's left
+## Status
 
-**Done (CPU-tested):**
-- Model architecture + bidirectional/causal forward
-- Data pipeline: StarCoder2 tokenizer wrapper, AST-aware subtree masking, random masking, FIM formatter, packed streaming dataset
-- Synthetic data generator (CLI ready, ~$300 for 100M tokens at sonnet pricing)
-- Eval harness: HumanEval, MBPP, HumanEval-FIM (3 variants), throughput sweep
-- 41 passing tests in `tests/`
+All core components implemented and CPU-tested:
+- Model (bidirectional + causal), data (AST/FIM/random masking + packing), diffusion sampler (remask + AR refine), training loop (WSD, 8-bit, BF16, curriculum, resume).
+- Top-level CLIs: train.py / sample.py / eval.py.
+- Eval harness + 4 ablation configs (extends + objective=causal_lm supported).
+- All tests pass (including causal_lm path).
 
-**To build on cluster:**
-- `src/sample/diffusion_sampler.py` — masked diffusion sampler with confidence-guided remasking + AR refinement
-- `src/train/loop.py` — full training loop (BF16, FA2, gradient checkpoint, 8-bit AdamW, WSD schedule, AST/random mask curriculum, W&B, checkpoint+resume)
-- `train.py`, `sample.py`, `eval.py` top-level entry points
-- `configs/main.yaml` and `configs/ablations/*.yaml`
+See LAUNCH.md for cluster training/eval sequence and ablations.
 
 See `LAUNCH.md` for the cluster sequence.
 
