@@ -2,12 +2,8 @@
 
 Entry point: ``run_training(config, *, max_steps=None, resume_from=None)``.
 
-The loop consumes the YAML config in ``configs/main.yaml``. Loss is
-cross-entropy on masked positions plus a small z-loss for stability
-(PaLM/ST-MoE). Optimizer is 8-bit AdamW (bitsandbytes) on GPU, falling back
-to fp32 AdamW on CPU. Schedule is WSD (linear warmup, constant, quadratic
-decay). A simple curriculum bumps ``dataset.mask_ratio_max`` from the YAML
-initial value (0.50) to 1.0 after ``mask_ratio_phase_pct`` of training.
+Supports objective "diffusion" (default) or "causal_lm" (for ar_only ablation).
+Config supports "extends:" via the train.py CLI.
 """
 from __future__ import annotations
 
@@ -150,6 +146,19 @@ def masked_diffusion_loss(
     z = (lse * lse).mean()
     total = ce + z_loss_weight * z
     return total, ce.detach(), z.detach()
+
+
+def causal_lm_loss(
+    logits: torch.Tensor, target_ids: torch.Tensor
+) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
+    """Standard next-token causal LM loss (shifted CE). Returns (loss, ce, z=0)."""
+    if logits.size(1) <= 1:
+        zero = logits.sum() * 0.0
+        return zero, zero, zero
+    shift_logits = logits[:, :-1, :].contiguous()
+    shift_targets = target_ids[:, 1:].contiguous()
+    loss = F.cross_entropy(shift_logits.view(-1, shift_logits.size(-1)), shift_targets.view(-1))
+    return loss, loss.detach(), torch.zeros((), device=loss.device, dtype=loss.dtype)
 
 
 # ---------------------------------------------------------------------------
@@ -299,12 +308,7 @@ def run_training(
     tokenizer: Any = None,
     model: Optional[CodeDiffusionTransformer] = None,
 ) -> Dict[str, Any]:
-    """Run masked-diffusion training.
-
-    Most callers (the CLI) only pass ``config``. ``dataset``/``tokenizer``/
-    ``model`` are injection points used by tests so we can avoid the real
-    StarCoder2 tokenizer and HF datasets path.
-    """
+    """Run training (diffusion or causal_lm per config['train']['objective'])."""
     seed = int(config.get("run", {}).get("seed", 42))
     torch.manual_seed(seed)
     random.seed(seed)
@@ -388,6 +392,7 @@ def run_training(
     seq_len = int(data_cfg["seq_len"])
     tokens_per_step = per_batch * grad_accum * seq_len
     z_loss_weight = float(train_cfg.get("z_loss_weight", 1e-4))
+    objective = str(train_cfg.get("objective", "diffusion")).lower()
     log_every = int(run_cfg.get("log_every", 50))
     ckpt_every = int(run_cfg.get("ckpt_every", 1000))
     output_dir = run_cfg.get("output_dir", "checkpoints/main")
@@ -416,11 +421,7 @@ def run_training(
 
     final_step = start_step
     for step in range(start_step, total_steps):
-        # Curriculum bump: dataset.mask_ratio_max changes mid-run.
-        # Why: we mutate the dataset attribute directly. With num_workers=0
-        # this is immediate; with workers>0 each worker has a snapshot, so the
-        # bump is eventually-consistent. That's acceptable since the bump
-        # happens once and the model trains for a long time afterwards.
+        # Curriculum: bump mask_ratio_max after phase_pct (affects dataset only).
         if step < phase_pct * total_steps:
             dataset.mask_ratio_max = initial_mask_ratio_max
         else:
@@ -446,10 +447,14 @@ def run_training(
             mask_positions = batch["mask_positions"].to(device, non_blocking=True)
 
             with torch.autocast(**autocast_kwargs):
-                logits = model(input_ids)
-                loss, ce, z = masked_diffusion_loss(
-                    logits, target_ids, mask_positions, z_loss_weight=z_loss_weight
-                )
+                if objective == "causal_lm":
+                    logits = model(input_ids, causal=True)
+                    loss, ce, z = causal_lm_loss(logits, target_ids)
+                else:
+                    logits = model(input_ids)
+                    loss, ce, z = masked_diffusion_loss(
+                        logits, target_ids, mask_positions, z_loss_weight=z_loss_weight
+                    )
             (loss / grad_accum).backward()
             accum_loss += float(loss.detach())
             accum_ce += float(ce)

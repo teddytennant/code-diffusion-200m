@@ -21,6 +21,7 @@ from src.model import CodeDiffusionTransformer, ModelConfig
 from src.train import loop as loop_module
 from src.train.loop import (
     build_optimizer,
+    causal_lm_loss,
     load_checkpoint,
     masked_diffusion_loss,
     run_training,
@@ -291,3 +292,34 @@ def test_masked_diffusion_loss_no_masked_positions() -> None:
     # Gradient should still be zero but well-defined.
     total.backward()
     assert logits.grad is not None
+
+
+def test_causal_lm_loss_basic() -> None:
+    torch.manual_seed(0)
+    logits = torch.randn(2, 8, 10, requires_grad=True)
+    targets = torch.randint(0, 10, (2, 8))
+    total, ce, z = causal_lm_loss(logits, targets)
+    assert math.isfinite(total.detach().item())
+    assert total.detach().item() > 0
+    assert ce.detach().item() > 0
+    assert z.detach().item() == 0.0
+    total.backward()
+    assert logits.grad is not None
+
+
+def test_causal_lm_objective_runs_cpu(tmp_path: Path) -> None:
+    cfg = _make_tiny_config(tmp_path, max_steps=2)
+    cfg["train"]["objective"] = "causal_lm"
+    dataset = _make_dataset(tmp_path)
+    model = _make_model(cfg)
+
+    result = run_training(
+        cfg,
+        max_steps=2,
+        dataset=dataset,
+        model=model,
+    )
+    metrics = result["metrics"]
+    assert "train/loss" in metrics
+    assert math.isfinite(metrics["train/loss"])
+    assert result["final_step"] == 1
