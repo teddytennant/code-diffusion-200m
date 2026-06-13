@@ -327,6 +327,19 @@ def run_training(
     device = torch.device("cuda" if cuda_ok else "cpu")
     model.to(device)
 
+    # ---- consumer-GPU perf flags (no-op on CPU)
+    if cuda_ok:
+        # TF32 for the fp32 matmuls autocast leaves alone (RoPE, norms, head).
+        torch.backends.cuda.matmul.allow_tf32 = True
+        torch.backends.cudnn.allow_tf32 = True
+        torch.set_float32_matmul_precision("high")
+        # torch.compile gives ~1.3-1.7x on a single consumer GPU. Opt-in via
+        # train.compile so CPU tests / smoke runs are unaffected. Compile only
+        # the model (fixed shapes); the loss does dynamic boolean indexing that
+        # would force graph breaks if traced.
+        if bool(train_cfg.get("compile", False)):
+            model = torch.compile(model)
+
     # ---- optimizer
     opt_cfg = train_cfg["optimizer"]
     use_8bit = (opt_cfg.get("name") == "adamw_8bit") and cuda_ok
