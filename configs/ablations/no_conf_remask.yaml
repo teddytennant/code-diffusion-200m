@@ -1,8 +1,0 @@
-# Ablation: confidence-guided remasking disabled (uniform random remasking).
-# Same checkpoint as main; only inference changes.
-extends: ../main.yaml
-run:
-  name: cd200m-no-conf-remask
-  output_dir: results/no_conf_remask
-sampler:
-  confidence_remask: false
